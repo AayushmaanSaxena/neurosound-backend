@@ -124,7 +124,39 @@ const login = async (req, res) => {
 
 }
 
+//get current user (protected)
+const getMe  = async (req, res) => {
+
+    try {
+        //request user attached by the middleware
+        //req.user.id is the user id  fro mteh JWT token
+        const [users] = await db.query (
+            'SELECT id, name, email, profile_image, created_at FROM users WHERE id = ?',
+            [req.user.id]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({
+                message: 'User not found'
+            });
+        }
+
+        //notice we only send back the id, name, email and profile image, 
+        // not the password or any sensitive info
+        res.status(200).json({
+            user: users[0]
+        });
+    }
+    catch (error) {
+        console.error('Get me error: ', error);
+        res.status(500).json({
+            message: 'Server error. Please try again.'
+        });
+    }
+}
+
 module.exports = {
     register,
-    login
+    login,
+    getMe
 };
