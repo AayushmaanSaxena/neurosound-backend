@@ -45,7 +45,8 @@ const protect = async (req, res, next) => {
         // if jwt.verify throws an error, it means the token is invalid or expired
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({
-                message: 'Token expired, Please log in again'
+                message: 'Access Token expired, Please log in again',
+                expired: true
             });
         }
 
