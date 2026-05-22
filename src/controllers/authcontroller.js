@@ -9,14 +9,6 @@ const register = async (req, res) => {
     //pulling iut the data that user sent
     const { name, email, password } = req.body;
 
-    //making sure that they sen t all fields 
-    if (!name || !email || !password) {
-        return res.status(400).json(
-            { message: 'Please provide name, email and password' }
-        );
-    }
-
-
     //checking  if teh email already exists in the database 
     try {
         const [existingUser] = await db.query(
@@ -61,13 +53,6 @@ const login = async (req, res) => {
 
     //pull out email and password from the request
     const { email, password } = req.body;
-
-    //make sure both fields are provided
-    if (!email || !password) {
-        return res.status(400).json({
-            message: 'please provide both email and password'
-        });
-    }
 
     try {
         //find the user in the database by email
