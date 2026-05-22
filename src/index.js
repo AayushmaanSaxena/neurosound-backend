@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const authRoutes = require('./routes/authroutes');
+const { authLimiter } = require('./middleware/rateLimitMiddleware');
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser()); // Reads cookies from incoming requests
+app.use(authLimiter); // Apply rate limiting to authentication routes
 
 //routes
 app.use('/api/auth', authRoutes);

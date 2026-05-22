@@ -3,10 +3,11 @@ const router = express.Router();
 const { register, login, getMe, logout, refresh } = require('../controllers/authcontroller');
 const { protect } = require('../middleware/authMiddleware');
 const { validateRegister, validateLogin } = require('../middleware/validationMiddleware');
+const { authLimiter } = require('../middleware/rateLimitMiddleware');
 
 // Public routes — no token required
-router.post('/register', validateRegister, register);
-router.post('/login', validateLogin, login);
+router.post('/register', authLimiter, validateRegister, register);
+router.post('/login', authLimiter, validateLogin, login);
 router.post('/refresh', refresh);
 router.post('/logout', logout);
 
