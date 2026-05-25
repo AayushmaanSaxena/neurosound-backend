@@ -5,6 +5,8 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/authroutes');
 const songRoutes = require('./routes/songRoutes');
+const artistRoutes = require('./routes/artistRoutes');
+const albumRoutes = require('./routes/albumRoutes');
 const { authLimiter, apiLimiter } = require('./middleware/rateLimitMiddleware');
 
 const app = express();
@@ -21,6 +23,8 @@ app.use(apiLimiter); // Apply rate limiting to API routes
 //routes
 app.use('/api/auth', authRoutes);
 app.use('/api/songs', songRoutes);
+app.use('/api/artists', artistRoutes);
+app.use('/api/albums', albumRoutes);
 
 //TEST ROUTE
 app.get('/', (req, res) => {
