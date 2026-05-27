@@ -7,6 +7,7 @@ const authRoutes = require('./routes/authroutes');
 const songRoutes = require('./routes/songRoutes');
 const artistRoutes = require('./routes/artistRoutes');
 const albumRoutes = require('./routes/albumRoutes');
+const playlistRoutes = require('./routes/playlistRoutes');
 const { authLimiter, apiLimiter } = require('./middleware/rateLimitMiddleware');
 
 const app = express();
@@ -25,7 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/songs', songRoutes);
 app.use('/api/artists', artistRoutes);
 app.use('/api/albums', albumRoutes);
-
+app.use('/api/playlists', playlistRoutes);
 //TEST ROUTE
 app.get('/', (req, res) => {
     res.json({ message: 'Welcome to NeuroSound API!' });
