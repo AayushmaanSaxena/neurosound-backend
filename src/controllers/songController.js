@@ -88,49 +88,62 @@ const createSong = async (req, res) => {
     try {
         const { title, artist_id, album_id, duration } = req.body;
 
-        //validate required fields
         if (!title || !artist_id) {
             return res.status(400).json({
-                message: 'Please provide title and artist_id'
+                message: 'Title and artist are required'
             });
         }
 
-        //req.file is set by multer when the file is uploaded
-        if (!req.file) {
+        // req.files is used when uploading multiple files
+        // req.files['audio'] is an array — we take index [0]
+        if (!req.files || !req.files['audio']) {
             return res.status(400).json({
                 message: 'Audio file is required'
             });
         }
 
-        //req.file.path is the cloudinary URL of the uploaded file
-        const audio_url = req.file.path;
+        // Check artist exists
+        const [artist] = await db.query(
+            'SELECT id FROM artists WHERE id = ?', [artist_id]
+        );
+
+        if (artist.length === 0) {
+            return res.status(404).json({ message: 'Artist not found' });
+        }
+
+        const audio_url = req.files['audio'][0].path;
+
+        // Cover image is optional
+        const cover_image = req.files['image']
+            ? req.files['image'][0].path
+            : null;
 
         const [result] = await db.query(
             `INSERT INTO songs 
-                (title, artist_id, album_id, duration, audio_url) 
-            VALUES(?, ?, ?, ?, ?)`,
-        [title, artist_id, album_id || null, duration || null, audio_url]
+                (title, artist_id, album_id, audio_url, cover_image, duration) 
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [title, artist_id, album_id || null, audio_url, cover_image, duration || null]
         );
 
-        //fetcht the newly created song to return it
-        const [newsong] = await db.query(
-            'SELECT * FROM songs WHERE id = ?',
-            [result.insertId]
-        );
+        const [newSong] = await db.query(`
+            SELECT 
+                songs.*,
+                artists.name AS artist_name
+            FROM songs
+            LEFT JOIN artists ON songs.artist_id = artists.id
+            WHERE songs.id = ?
+        `, [result.insertId]);
 
         res.status(201).json({
             message: 'Song created successfully',
-            song: newsong[0]
+            song: newSong[0]
         });
-    }
-    catch (error) {
-        console.error('Create Song Error:', error);
-        res.status(500).json({  
-            message: 'Server error. Please try again.'
-        });
+
+    } catch (error) {
+        console.error('Create song error:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 };
-
 // ─────────────────────────────────────────
 // UPDATE SONG
 // PUT /api/songs/:id
@@ -141,7 +154,6 @@ const updateSong = async (req, res) => {
         const { id } = req.params;
         const { title, artist_id, album_id, duration } = req.body;
 
-        // Check if song exists
         const [existing] = await db.query(
             'SELECT * FROM songs WHERE id = ?', [id]
         );
@@ -150,22 +162,30 @@ const updateSong = async (req, res) => {
             return res.status(404).json({ message: 'Song not found' });
         }
 
-        // Use existing values if new ones aren't provided
         const updatedTitle = title || existing[0].title;
         const updatedArtist = artist_id || existing[0].artist_id;
         const updatedAlbum = album_id || existing[0].album_id;
         const updatedDuration = duration || existing[0].duration;
 
+        // If new cover image uploaded, use it
+        // Otherwise keep existing
+        const updatedCover = req.files && req.files['image']
+            ? req.files['image'][0].path
+            : existing[0].cover_image;
+
         await db.query(
             `UPDATE songs 
-             SET title = ?, artist_id = ?, album_id = ?, duration = ?
+             SET title = ?, artist_id = ?, album_id = ?, duration = ?, cover_image = ?
              WHERE id = ?`,
-            [updatedTitle, updatedArtist, updatedAlbum, updatedDuration, id]
+            [updatedTitle, updatedArtist, updatedAlbum, updatedDuration, updatedCover, id]
         );
 
-        const [updatedSong] = await db.query(
-            'SELECT * FROM songs WHERE id = ?', [id]
-        );
+        const [updatedSong] = await db.query(`
+            SELECT songs.*, artists.name AS artist_name
+            FROM songs
+            LEFT JOIN artists ON songs.artist_id = artists.id
+            WHERE songs.id = ?
+        `, [id]);
 
         res.status(200).json({
             message: 'Song updated successfully',
@@ -216,8 +236,8 @@ const deleteSong = async (req, res) => {
 
 module.exports = {
     getAllSongs,
-    getSongById,    
+    getSongById,
     createSong,
     updateSong,
-    deleteSong  
+    deleteSong
 }

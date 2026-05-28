@@ -34,6 +34,24 @@ app.get('/', (req, res) => {
     res.json({ message: 'Welcome to NeuroSound API!' });
 });
 
+// ─────────────────────────────────────────
+// GLOBAL ERROR HANDLER
+// Catches any error that wasn't handled
+// Must have 4 parameters — (err, req, res, next)
+// Express identifies it as an error handler by the 4th param
+// ─────────────────────────────────────────
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({
+        message: 'Something went wrong. Please try again.'
+    });
+});
+
+// Handle routes that don't exist
+app.use((req, res) => {
+    res.status(404).json({ message: 'Route not found' });
+});
+
 // start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
