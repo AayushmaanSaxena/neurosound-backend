@@ -7,6 +7,24 @@ const cloudinary = require('../config/cloudinary');
 
 const getAllSongs = async (req, res) => {
     try {
+        // Read page and limit from query params
+        // Default: page 1, 10 songs per page
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+
+        // Calculate how many songs to skip
+        // Page 1: skip 0
+        // Page 2: skip 10
+        // Page 3: skip 20
+        const offset = (page - 1) * limit;
+
+        // Get total count of songs (for frontend to know total pages)
+        const [countResult] = await db.query(
+            'SELECT COUNT(*) AS total FROM songs'
+        );
+        const totalSongs = countResult[0].total;
+        const totalPages = Math.ceil(totalSongs / limit);
+
         //JOIN lets us get artist name and album title 
         //in the same query instead of making multiple queries
         const [songs] = await db.query(`
@@ -24,10 +42,16 @@ const getAllSongs = async (req, res) => {
             LEFT JOIN artists ON songs.artist_id = artists.id
             LEFT JOIN albums ON songs.album_id = albums.id
             ORDER BY songs.created_at DESC
-        `);
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
 
         res.status(200).json({
-            count: songs.length,
+            page,
+            limit,
+            totalSongs,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
             songs
         });
     }
